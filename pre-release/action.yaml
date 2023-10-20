@@ -1,0 +1,92 @@
+name: 'Release'
+description: 'Create a pull request release of latest master branch and bump the version in package.json'
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.PAT }}
+  
+    - name: Generate new version
+      id: semver
+      uses: paulhatch/semantic-version@v5.0.3
+      with:
+        tag_prefix: "v"
+        change_path: "."
+        major_pattern: "breaking"
+        minor_pattern: "feat"
+        bump_each_commit: false
+
+    - name: Create PR for new release
+      id: bump
+      if: steps.semver.outputs.changed == 'true'
+      uses: fjogeleit/yaml-update-action@v0.13.0
+      with:
+        valueFile: package.json
+        propertyPath: 'version'
+        value: "${{ steps.semver.outputs.version }}"
+        message: bump to ${{ steps.semver.outputs.version_tag }}
+        createPR: true
+        title: Release ${{ steps.semver.outputs.version_tag }}
+        description: "_put additional configs such as env, secret, syspar, or other in here_"
+        branch: release-${{ steps.semver.outputs.version_tag }}
+        targetBranch: release
+        labels: 'deployment'
+        token: ${{ secrets.PAT }}
+
+    - name: Get PR Commits
+      id: 'get-pr-commits'
+      if: steps.semver.outputs.changed == 'true'
+      uses: REY-ID/get-pr-commits@master
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        pr_number: ${{ steps.bump.outputs.pull_request && fromJSON(steps.bump.outputs.pull_request).number }}
+
+    - name: Send release approval slack message
+      if: steps.semver.outputs.changed == 'true'
+      uses: archive/github-actions-slack@v2.7.0
+      id: send-message
+      with:
+        slack-bot-user-oauth-access-token: ${{ secrets.SLACK_RELEASE_OAUTH_ACCESS_TOKEN }}
+        slack-channel: ${{ vars.SLACK_RELEASE_CHANNEL_ID }}
+        slack-text: "Release Approval"
+        slack-optional-attachments: >-
+          [{
+              "author_name": "${{ github.actor }}",
+              "author_link": "https://github.com/${{ github.actor }}",
+              "author_icon": "https://github.com/${{ github.actor }}.png?size=32",
+              "color": "#00708D",
+              "fields": [
+                { "title": "Service", "value": "*${{ github.event.repository.name }}*", "short": true },
+                { "title": "Version", "value": "*${{ steps.semver.outputs.version_tag }} (${{ steps.semver.outputs.version_type }})*", "short": true },
+                { "title": "PR", "value": "${{ steps.bump.outputs.pull_request && fromJSON(steps.bump.outputs.pull_request).html_url }}" }
+              ]
+          }]
+
+    - name: Login to Jira
+      if: steps.semver.outputs.changed == 'true'
+      uses: atlassian/gajira-login@v3
+      env:
+        JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+        JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+        JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+    - name: Find Jira Task
+      id: find-issue-key
+      if: steps.semver.outputs.changed == 'true'
+      uses: REY-ID/gajira-find-issue-key@master
+      with:
+        string: ${{ steps.get-pr-commits.outputs.messages }}
+
+    - name: Send jira task to thread
+      if: steps.semver.outputs.changed == 'true' && steps.find-issue-key.outputs.has_issues == 'true'
+      uses: archive/github-actions-slack@v2.7.0
+      with:
+        slack-function: send-message
+        slack-bot-user-oauth-access-token: ${{ secrets.SLACK_RELEASE_OAUTH_ACCESS_TOKEN }}
+        slack-channel: ${{ vars.SLACK_RELEASE_CHANNEL_ID }}
+        slack-optional-thread_ts: ${{ fromJson(steps.send-message.outputs.slack-result).response.message.ts }}
+        slack-blocks: >-
+          [{"type": "section","text":{"type": "mrkdwn","text": "${{ steps.find-issue-key.outputs.markdown }}"}}]
