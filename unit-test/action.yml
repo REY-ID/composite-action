@@ -1,0 +1,52 @@
+name: 'Unit Test'
+description: 'Run unit tests'
+
+inputs:
+  SSH_PRIVATE_KEY:
+    description: 'SSH private key'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        persist-credentials: false
+
+    - name: Use private ssh-key
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ inputs.SSH_PRIVATE_KEY }}
+
+    - name: Use node.js 16
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: Use dependency cache
+      uses: actions/cache@v3
+      id: npm-cache
+      with:
+        path: '**/node_modules'
+        key: ${{ github.event.repository.name }}-${{ hashFiles('**/package.json') }}
+
+    - name: Install dependencies
+      shell: bash
+      if: steps.npm-cache.outputs.cache-hit != 'true'
+      run: npm install
+
+    - name: Run unit-test
+      shell: bash
+      run: npm run test-sonar
+
+    - name: Dry-run build
+      shell: bash
+      run: npm run build
+
+    - name: Upload lcov code coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage
+        path: coverage
+        retention-days: 1
