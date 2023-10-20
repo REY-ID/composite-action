@@ -1,5 +1,29 @@
 name: 'Release'
 description: 'Create a pull request release of latest master branch and bump the version in package.json'
+
+inputs:
+  PAT:
+    description: 'Personal Access Token to impersonate the a user'
+    required: true
+  GITHUB_TOKEN:
+    description: 'GitHub Token to access the repository'
+    required: true
+  SLACK_ACCESS_TOKEN:
+    description: 'Slack Access Token to send message to slack'
+    required: true
+  SLACK_CHANNEL: 
+    description: 'Slack Channel to send message to'
+    required: true
+  JIRA_BASE_URL:
+    description: 'Jira Base URL'
+    required: true
+  JIRA_USER_EMAIL:
+    description: 'Jira User Email'
+    required: true
+  JIRA_API_TOKEN:
+    description: 'Jira API Token'
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -7,7 +31,7 @@ runs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-        token: ${{ secrets.PAT }}
+        token: ${{ inputs.PAT }}
   
     - name: Generate new version
       id: semver
@@ -34,14 +58,14 @@ runs:
         branch: release-${{ steps.semver.outputs.version_tag }}
         targetBranch: release
         labels: 'deployment'
-        token: ${{ secrets.PAT }}
+        token: ${{ inputs.PAT }}
 
     - name: Get PR Commits
       id: 'get-pr-commits'
       if: steps.semver.outputs.changed == 'true'
       uses: REY-ID/get-pr-commits@master
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.GITHUB_TOKEN }}
         pr_number: ${{ steps.bump.outputs.pull_request && fromJSON(steps.bump.outputs.pull_request).number }}
 
     - name: Send release approval slack message
@@ -49,8 +73,8 @@ runs:
       uses: archive/github-actions-slack@v2.7.0
       id: send-message
       with:
-        slack-bot-user-oauth-access-token: ${{ secrets.SLACK_RELEASE_OAUTH_ACCESS_TOKEN }}
-        slack-channel: ${{ vars.SLACK_RELEASE_CHANNEL_ID }}
+        slack-bot-user-oauth-access-token: ${{ inputs.SLACK_ACCESS_TOKEN }}
+        slack-channel: ${{ inputs.SLACK_CHANNEL }}
         slack-text: "Release Approval"
         slack-optional-attachments: >-
           [{
@@ -69,9 +93,9 @@ runs:
       if: steps.semver.outputs.changed == 'true'
       uses: atlassian/gajira-login@v3
       env:
-        JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
-        JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-        JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        JIRA_BASE_URL: ${{ inputs.JIRA_BASE_URL }}
+        JIRA_USER_EMAIL: ${{ inputs.JIRA_USER_EMAIL }}
+        JIRA_API_TOKEN: ${{ inputs.JIRA_API_TOKEN }}
 
     - name: Find Jira Task
       id: find-issue-key
@@ -85,8 +109,8 @@ runs:
       uses: archive/github-actions-slack@v2.7.0
       with:
         slack-function: send-message
-        slack-bot-user-oauth-access-token: ${{ secrets.SLACK_RELEASE_OAUTH_ACCESS_TOKEN }}
-        slack-channel: ${{ vars.SLACK_RELEASE_CHANNEL_ID }}
+        slack-bot-user-oauth-access-token: ${{ inputs.SLACK_ACCESS_TOKEN }}
+        slack-channel: ${{ inputs.SLACK_CHANNEL }}
         slack-optional-thread_ts: ${{ fromJson(steps.send-message.outputs.slack-result).response.message.ts }}
         slack-blocks: >-
           [{"type": "section","text":{"type": "mrkdwn","text": "${{ steps.find-issue-key.outputs.markdown }}"}}]
