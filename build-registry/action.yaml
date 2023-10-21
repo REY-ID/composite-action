@@ -28,6 +28,9 @@ inputs:
   AWS_PIPELINE_ACCOUNT_ID:
     description: 'AWS Pipeline Account ID'
     required: true
+  SLACK_WEBHOOK:
+    description: 'Slack Webhook'
+    required: false
 
 runs:
   using: "composite"
@@ -69,3 +72,12 @@ runs:
         platforms: {{ inputs.PLATFORM }}
         tags: |
           "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
+
+    - name: Notify slack if fail
+      if: ${{ failure() && inputs.SLACK_WEBHOOK }}
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ inputs.SLACK_WEBHOOK }}
+        SLACK_COLOR: "#CE5A51"
+        SLACK_MESSAGE: "Workflow of `${{ inputs.SERVICE_NAME }}` has failed"
+        MSG_MINIMAL: "actions url"
