@@ -1,0 +1,38 @@
+name: 'Update ArgoCD Tag'
+description: 'Update ArgoCD Tag in github repository'
+
+inputs:
+  ARGO_REPO:
+    description: 'ArgoCD repository'
+    required: true
+  SERVICE_NAME:
+    description: 'Service name'
+    required: true
+  PAT:
+    description: 'Personal Access Token'
+    required: true
+  IMAGE_TAG:
+    description: 'Image tag'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout ArgoCD repository
+      uses: actions/checkout@v3
+      with:
+        repository: ${{ inputs.ARGO_REPO }}
+        path: infrastructure
+        token: ${{ secrets.PAT }}
+
+    - name: Update ArgoCD image tag
+      uses: fjogeleit/yaml-update-action@v0.12.2
+      with:
+        repository: ${{ inputs.ARGO_REPO }}
+        valueFile: ${{ inputs.SERVICE_NAME }}/values.yaml
+        propertyPath: 'image.tag'
+        value: "${{ inputs.IMAGE_TAG }}"
+        message: update ${{ inputs.SERVICE_NAME }} image tag to ${{ inputs.IMAGE_TAG }}
+        createPR: false
+        workDir: infrastructure
+        token: ${{ secrets.PAT }}
