@@ -68,8 +68,8 @@ runs:
       with:
         context: .
         push: true
-        provenance: false
-        platforms: {{ inputs.PLATFORM }}
+        # provenance: false
+        platforms: ${{ inputs.PLATFORM }}
         tags: |
           "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
 
