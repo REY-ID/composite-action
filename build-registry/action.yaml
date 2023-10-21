@@ -23,7 +23,7 @@ inputs:
     required: true
   AWS_REGION:
     description: 'AWS Region'
-    default: 'ap-southeast-2'
+    default: 'ap-southeast-3' # Jakarta region
     required: true
   AWS_PIPELINE_ACCOUNT_ID:
     description: 'AWS Pipeline Account ID'
