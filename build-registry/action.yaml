@@ -1,0 +1,70 @@
+name: 'Build Registry'
+description: 'Build container registry to Elastic Container Registry'
+
+inputs:
+  SERVICE_NAME:
+    description: 'Service name'
+    required: true
+  PLATFORM:
+    description: 'Platform'
+    required: true
+  IMAGE_TAG:
+    description: 'Image tag'
+    required: true
+  AWS_ACCOUNT_ID:
+    description: 'AWS Account ID'
+    required: true
+  AWS_ACCESS_KEY_ID:
+    description: 'AWS Access Key ID'
+    required: true
+  AWS_SECRET_ACCESS_KEY:
+    description: 'AWS Secret Access Key'
+    required: true
+  AWS_REGION:
+    description: 'AWS Region'
+    default: 'ap-southeast-2'
+    required: true
+  AWS_PIPELINE_ACCOUNT_ID:
+    description: 'AWS Pipeline Account ID'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: arm64,amd64
+
+    - name: Set up Docker Context for Buildx
+      shell: bash
+      id: buildx-context
+      run: |
+        docker context create buildx-context
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      with:
+        endpoint: buildx-context
+
+    - name: Login to ECR
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com
+        username: ${{ inputs.AWS_ACCESS_KEY_ID }}
+        password: ${{ inputs.AWS_SECRET_ACCESS_KEY }}
+      env:
+        AWS_ACCOUNT_IDS: ${{ inputs.AWS_PIPELINE_ACCOUNT_ID }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: true
+        provenance: false
+        platforms: {{ inputs.PLATFORM }}
+        tags: |
+          "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
