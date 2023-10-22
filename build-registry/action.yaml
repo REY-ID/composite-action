@@ -79,5 +79,5 @@ runs:
       env:
         SLACK_WEBHOOK: ${{ inputs.SLACK_WEBHOOK }}
         SLACK_COLOR: "#CE5A51"
-        SLACK_MESSAGE: "Building registry for `${{ inputs.SERVICE_NAME }} (${{ inputs.IMAGE_TAG }})` has failed"
+        SLACK_MESSAGE: "Building registry for `${{ inputs.SERVICE_NAME }}` has failed"
         MSG_MINIMAL: "actions url"
