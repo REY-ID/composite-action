@@ -41,7 +41,7 @@ runs:
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
       with:
-        platforms: arm64,amd64
+        platforms: amd64
 
     - name: Set up Docker Context for Buildx
       shell: bash
