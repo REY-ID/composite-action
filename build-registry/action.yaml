@@ -36,10 +36,10 @@ runs:
   using: "composite"
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
+      uses: docker/setup-qemu-action@v3
       with:
         platforms: amd64
 
@@ -50,7 +50,7 @@ runs:
         docker context create buildx-context
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
       with:
         endpoint: buildx-context
 
@@ -64,11 +64,11 @@ runs:
         AWS_ACCOUNT_IDS: ${{ inputs.AWS_PIPELINE_ACCOUNT_ID }}
 
     - name: Build and push
-      uses: docker/build-push-action@v3
+      uses: docker/build-push-action@v5
       with:
         context: .
         push: true
-        # provenance: false
+        provenance: false
         platforms: ${{ inputs.PLATFORM }}
         tags: |
           "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
