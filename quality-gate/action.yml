@@ -8,6 +8,10 @@ inputs:
   SONAR_HOST:
     description: 'Sonar Host'
     required: true
+  WITH_COVERAGE:
+    description: 'With coverage'
+    required: false
+    default: "true"
 
 runs:
   using: "composite"
@@ -18,6 +22,7 @@ runs:
 
   - name: Download lcov code coverage
     uses: actions/download-artifact@v3
+    if: ${{ inputs.WITH_COVERAGE == 'true' }}
     with:
       name: coverage
       path: coverage
