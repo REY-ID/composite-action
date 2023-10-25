@@ -5,6 +5,10 @@ inputs:
   SSH_PRIVATE_KEY:
     description: 'SSH private key'
     required: true
+  NODE_VERSION:
+    description: 'Node version'
+    required: false
+    default: '16'
 
 runs:
   using: "composite"
@@ -19,10 +23,10 @@ runs:
       with:
         ssh-private-key: ${{ inputs.SSH_PRIVATE_KEY }}
 
-    - name: Use node.js 16
+    - name: Use Node ${{ inputs.NODE_VERSION }}
       uses: actions/setup-node@v3
       with:
-        node-version: '16'
+        node-version: ${{ inputs.NODE_VERSION }}
 
     - name: Use dependency cache
       uses: actions/cache@v3
