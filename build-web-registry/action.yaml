@@ -30,6 +30,9 @@ inputs:
   VAULT_URL:
     description: 'Vault URL'
     required: true
+  PAT:
+    description: 'Personal Access Token'
+    required: true
 
 runs:
   using: "composite"
