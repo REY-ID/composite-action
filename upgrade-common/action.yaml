@@ -21,6 +21,10 @@ runs:
         excludes: prerelease, draft
         token: ${{ inputs.PAT }}
 
+    - name: Set version as env
+      shell: bash
+      run: echo "VERSION=${{ inputs.VERSION || steps.latest.outputs.release }}" >> $GITHUB_ENV
+
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
@@ -32,16 +36,16 @@ runs:
       with:
         file: package.json
         field: "dependencies.rey-common"
-        value: "git@github.com:REY-ID/rey-common.git#${{ inputs.VERSION || steps.latest.outputs.release }}"
+        value: "git@github.com:REY-ID/rey-common.git#${{ env.VERSION }}"
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
       with:
         token: ${{ inputs.PAT }}
-        commit-message: update rey-common version to ${{ steps.latest.outputs.release }}
-        branch: upgrade/rey-common-${{ steps.latest.outputs.release }}
+        commit-message: update rey-common version to ${{ env.VERSION }}
+        branch: upgrade/rey-common-${{ env.VERSION }}
         delete-branch: true
-        title: rey-common version ${{ steps.latest.outputs.release }}
+        title: rey-common version ${{ env.VERSION }}
         body: |
-          This PR updates rey-common version to ${{ steps.latest.outputs.release }}
+          This PR updates rey-common version to `${{ env.VERSION }}`
         labels: dependencies
