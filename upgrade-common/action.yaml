@@ -14,7 +14,7 @@ runs:
   steps:
     - id: latest
       if: ${{ !inputs.VERSION }}
-      uses: pozetroninc/github-action-get-latest-release@0.7.0
+      uses: pozetroninc/github-action-get-latest-release@v0.7.0
       with:
         owner: REY-ID
         repo: rey-common
