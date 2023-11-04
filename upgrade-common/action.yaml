@@ -1,0 +1,34 @@
+name: 'Upgrade Rey Common'
+description: 'Updgrade Rey Common'
+
+inputs:
+  VERSION:
+    description: 'ArgoCD repository'
+    required: false
+  PAT:
+    description: 'Personal Access Token'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - id: latest
+      if: ${{ !inputs.VERSION }}
+      uses: pozetroninc/github-action-get-latest-release@0.7.0
+      with:
+        owner: REY-ID
+        repo: rey-common
+        excludes: prerelease, draft
+        token: ${{ inputs.PAT }}
+
+    - name: Update ArgoCD image tag
+      uses: fjogeleit/yaml-update-action@v0.12.2
+      with:
+        format: JSON
+        repository: ${{ github.repository }}
+        valueFile: package.json
+        propertyPath: 'dependencies.rey-common'
+        value: ${{ inputs.VERSION || steps.latest.outputs.version }}
+        message: update rey-common version to ${{ steps.latest.outputs.version }}
+        createPR: true
+        token: ${{ inputs.PAT }}
