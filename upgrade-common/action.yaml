@@ -22,7 +22,7 @@ runs:
         token: ${{ inputs.PAT }}
 
     - name: Update ArgoCD image tag
-      uses: fjogeleit/yaml-update-action@v0.12.2
+      uses: fjogeleit/yaml-update-action@v0.9.0
       with:
         repository: ${{ github.repository }}
         valueFile: package.json
