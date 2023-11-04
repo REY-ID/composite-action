@@ -45,7 +45,7 @@ runs:
         commit-message: update rey-common version to ${{ env.VERSION }}
         branch: upgrade/rey-common-${{ env.VERSION }}
         delete-branch: true
-        title: rey-common version ${{ env.VERSION }}
+        title: Bump common to ${{ env.VERSION }}
         body: |
           This PR updates rey-common version to `${{ env.VERSION }}`
         labels: dependencies
