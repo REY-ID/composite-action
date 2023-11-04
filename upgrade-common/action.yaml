@@ -28,7 +28,7 @@ runs:
         repository: ${{ github.repository }}
         valueFile: package.json
         propertyPath: 'dependencies.rey-common'
-        value: ${{ inputs.VERSION || steps.latest.outputs.version }}
+        value: "git@github.com:REY-ID/rey-common.git#${{ inputs.VERSION || steps.latest.outputs.version }}"
         message: update rey-common version to ${{ steps.latest.outputs.version }}
         createPR: true
         token: ${{ inputs.PAT }}
