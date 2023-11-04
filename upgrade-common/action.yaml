@@ -37,7 +37,7 @@ runs:
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
       with:
-        token: ${{ secrets.PAT }}
+        token: ${{ inputs.PAT }}
         commit-message: update rey-common version to ${{ steps.latest.outputs.release }}
         branch: upgrade/rey-common-${{ steps.latest.outputs.release }}
         delete-branch: true
