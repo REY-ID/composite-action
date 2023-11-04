@@ -25,7 +25,6 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: ${{ github.repository }}
-        path: service
         token: ${{ inputs.PAT }}
 
     - name: Update ArgoCD image tag
@@ -39,4 +38,3 @@ runs:
         message: update rey-common version to ${{ steps.latest.outputs.release }}
         createPR: true
         token: ${{ inputs.PAT }}
-        path: service
