@@ -1,5 +1,5 @@
 name: 'Upgrade Rey Common'
-description: 'Updgrade Rey Common'
+description: 'upgrade rey-common version'
 
 inputs:
   VERSION:
@@ -41,3 +41,7 @@ runs:
         commit-message: update rey-common version to ${{ steps.latest.outputs.release }}
         branch: upgrade/rey-common-${{ steps.latest.outputs.release }}
         delete-branch: true
+        title: rey-common version ${{ steps.latest.outputs.release }}
+        body: |
+          This PR updates rey-common version to ${{ steps.latest.outputs.release }}
+        labels: dependencies
