@@ -24,6 +24,7 @@ runs:
     - name: Update ArgoCD image tag
       uses: fjogeleit/yaml-update-action@v0.9.0
       with:
+        format: JSON
         repository: ${{ github.repository }}
         valueFile: package.json
         propertyPath: 'dependencies.rey-common'
