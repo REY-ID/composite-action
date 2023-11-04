@@ -34,7 +34,7 @@ runs:
         format: JSON
         repository: ${{ github.repository }}
         valueFile: "package.json"
-        propertyPath: 'dependencies.rey-common'
+        propertyPath: "dependencies.rey-common"
         value: "git@github.com:REY-ID/rey-common.git#${{ inputs.VERSION || steps.latest.outputs.release }}"
         message: update rey-common version to ${{ steps.latest.outputs.release }}
         createPR: true
