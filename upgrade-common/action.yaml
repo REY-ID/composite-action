@@ -21,14 +21,22 @@ runs:
         excludes: prerelease, draft
         token: ${{ inputs.PAT }}
 
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        path: service
+        token: ${{ inputs.PAT }}
+
     - name: Update ArgoCD image tag
       uses: fjogeleit/yaml-update-action@v0.13.1
       with:
         format: JSON
         repository: ${{ github.repository }}
-        valueFile: package.json
+        valueFile: "package.json"
         propertyPath: 'dependencies.rey-common'
-        value: "git@github.com:REY-ID/rey-common.git#${{ inputs.VERSION || steps.latest.outputs.version }}"
-        message: update rey-common version to ${{ steps.latest.outputs.version }}
+        value: "git@github.com:REY-ID/rey-common.git#${{ inputs.VERSION || steps.latest.outputs.release }}"
+        message: update rey-common version to ${{ steps.latest.outputs.release }}
         createPR: true
         token: ${{ inputs.PAT }}
+        path: service
