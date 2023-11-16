@@ -56,8 +56,8 @@ runs:
       if: steps.semver.outputs.changed == 'true'
       uses: fjogeleit/yaml-update-action@v0.13.0
       with:
-        valueFile: {{ inputs.VERSIONING_FILE }}
-        propertyPath: {{ inputs.VERSIONING_PATH }}
+        valueFile: ${{ inputs.VERSIONING_FILE }}
+        propertyPath: ${{ inputs.VERSIONING_PATH }}
         value: "${{ steps.semver.outputs.version }}"
         message: bump to ${{ steps.semver.outputs.version_tag }}
         createPR: true
