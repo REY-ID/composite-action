@@ -1,5 +1,5 @@
 name: 'Release'
-description: 'Create a pull request release of latest master branch and bump the version in package.json'
+description: 'Create a pull request release of latest master branch and bump the version'
 
 inputs:
   PAT:
@@ -23,6 +23,14 @@ inputs:
   JIRA_API_TOKEN:
     description: 'Jira API Token'
     required: true
+  VERSIONING_FILE:
+    description: 'Versioning File'
+    required: false
+    default: 'package.json'
+  VERSIONING_PATH:
+    description: 'Versioning Path'
+    required: false
+    default: 'version'
 
 runs:
   using: "composite"
@@ -48,8 +56,8 @@ runs:
       if: steps.semver.outputs.changed == 'true'
       uses: fjogeleit/yaml-update-action@v0.13.0
       with:
-        valueFile: package.json
-        propertyPath: 'version'
+        valueFile: {{ inputs.VERSIONING_FILE }}
+        propertyPath: {{ inputs.VERSIONING_PATH }}
         value: "${{ steps.semver.outputs.version }}"
         message: bump to ${{ steps.semver.outputs.version_tag }}
         createPR: true
