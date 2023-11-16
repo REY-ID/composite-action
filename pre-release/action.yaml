@@ -25,12 +25,12 @@ inputs:
     required: true
   VERSIONING_FILE:
     description: 'Versioning File'
-    required: false
     default: 'package.json'
+    required: false
   VERSIONING_PATH:
     description: 'Versioning Path'
-    required: false
     default: 'version'
+    required: false
 
 runs:
   using: "composite"
