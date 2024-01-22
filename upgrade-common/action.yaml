@@ -36,7 +36,7 @@ runs:
       with:
         file: package.json
         field: "dependencies.rey-common"
-        value: "git@github.com:REY-ID/rey-common.git#${{ env.VERSION }}"
+        value: "git+ssh://git@github.com:REY-ID/rey-common.git#${{ env.VERSION }}"
 
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v5
