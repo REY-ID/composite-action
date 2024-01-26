@@ -8,7 +8,7 @@ inputs:
   GOOGLE_PROJECT_NUMBER:
     description: 'Google project number'
     required: true
-  SERVICE_ACCOUNT_KEY:
+  GOOGLE_SERVICE_ACCOUNT_KEY:
     description: 'Service account key'
     required: true
   BQ_SERVICE_ACCOUNT_NAME:
@@ -36,7 +36,7 @@ runs:
     - name: Authenticate to Google Cloud
       uses: 'google-github-actions/auth@v1'
       with:
-        credentials_json: ${{ inputs.SERVICE_ACCOUNT_KEY }}
+        credentials_json: ${{ inputs.GOOGLE_SERVICE_ACCOUNT_KEY }}
 
     - name: Set up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
