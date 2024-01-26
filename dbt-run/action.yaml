@@ -2,9 +2,6 @@ name: 'Run dbt'
 description: 'run data build tool with specified profile'
 
 inputs:
-  NAME:
-    description: 'Name of the service'
-    required: true
   GOOGLE_PROJECT_ID:
     description: 'Google project id'
     required: true
