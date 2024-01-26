@@ -1,0 +1,90 @@
+name: 'Run dbt'
+description: 'run data build tool with specified profile'
+
+inputs:
+  NAME:
+    description: 'Name of the service'
+    required: true
+  GOOGLE_PROJECT_ID:
+    description: 'Google project id'
+    required: true
+  GOOGLE_PROJECT_NUMBER:
+    description: 'Google project number'
+    required: true
+  SERVICE_ACCOUNT_KEY:
+    description: 'Service account key'
+    required: true
+  BQ_SERVICE_ACCOUNT_NAME:
+    description: 'BigQuery service account name'
+    required: true
+  PROFILE:
+    description: 'dbt profile'
+    required: true
+  ENVIRONMENT:
+    description: 'dbt environment'
+    required: false
+  EXTRA_COMMAND:
+    description: 'dbt extra command'
+    required: false
+  SLACK_WEBHOOK:
+    description: 'Slack Webhook'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Authenticate to Google Cloud
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: ${{ inputs.SERVICE_ACCOUNT_KEY }}
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ inputs.GOOGLE_PROJECT_NUMBER }}
+
+    - name: Get secrets
+      id: secrets
+      uses: google-github-actions/get-secretmanager-secrets@main
+      with:
+        secrets: |-
+          profile:${{ inputs.GOOGLE_PROJECT_NUMBER }}/${{ inputs.PROFILE }}
+          svc_acc:${{ inputs.GOOGLE_PROJECT_NUMBER }}/${{ inputs.BQ_SERVICE_ACCOUNT_NAME }}
+
+    - name: Create service account file
+      shell: bash
+      env:
+        SVC_ACC_FILE: ${{ steps.secrets.outputs.svc_acc }}
+      run: echo $SVC_ACC_FILE | sed '$!s/$/\\n/' | tr -d '\n' > credentials.json
+
+    - name: Create profiles configuration file
+      shell: bash
+      env:
+        PROFILES_FILE: ${{ steps.secrets.outputs.profile }}
+      run: echo $PROFILES_FILE > profiles.json
+
+    - name: Convert profiles json to yaml
+      id: convert
+      uses: mikefarah/yq@master
+      with:
+        cmd: yq -P '.' profiles.json > profiles.yml
+
+    - name: Install dependencies
+      shell: bash
+      run: dbt deps
+
+    - name: Execute dbt run
+      shell: bash
+      run: dbt run --target ${{ inputs.ENVIRONMENT || 'prod' }} ${{ inputs.EXTRA_COMMAND }}
+
+    - name: Notify slack if fail
+      if: failure()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ inputs.SLACK_WEBHOOK }}
+        SLACK_COLOR: "#CE5A51"
+        SLACK_MESSAGE: "dbt run has failed"
+        MSG_MINIMAL: "actions url"
