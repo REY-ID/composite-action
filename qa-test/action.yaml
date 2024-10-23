@@ -2,9 +2,6 @@ name: 'automation test'
 description: 'Run unit tests'
 
 inputs:
-  SSH_PRIVATE_KEY:
-    description: 'SSH private key'
-    required: true
   NODE_VERSION:
     description: 'Node version'
     required: false
@@ -17,11 +14,6 @@ runs:
       uses: actions/checkout@v4
       with:
         persist-credentials: false
-
-    - name: Use private ssh-key
-      uses: webfactory/ssh-agent@v0.7.0
-      with:
-        ssh-private-key: ${{ inputs.SSH_PRIVATE_KEY }}
 
     - name: Use Node ${{ inputs.NODE_VERSION }}
       uses: actions/setup-node@v3
