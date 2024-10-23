@@ -1,0 +1,23 @@
+name: automation test playwright
+on:
+  workflow_dispatch: # Manual Running
+  
+jobs:
+    Testing:
+        runs-on: ['self-hosted', 'web']
+        steps:
+            - name: Get Code
+              uses: actions/checkout@v3
+              with:
+                ref: e2e
+            - name: Install NodeJS
+              uses: actions/setup-node@v3
+              with:
+                node-version: 20
+            - name: Install dependencies
+              shell: bash
+              run: npm install
+            - name: Install Playwright #Run all testcases
+              run: npx playwright install
+            - name: Run qa test
+              run: npx playwright test
