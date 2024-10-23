@@ -1,23 +1,34 @@
-name: automation test playwright
-on:
-  workflow_dispatch: # Manual Running
-  
-jobs:
-    Testing:
-        # runs-on: ['self-hosted', 'web']
-        steps:
-            - name: Get Code
-              uses: actions/checkout@v3
-              with:
-                ref: e2e
-            - name: Install NodeJS
-              uses: actions/setup-node@v3
-              with:
-                node-version: 20
-            - name: Install dependencies
-              shell: bash
-              run: npm install
-            - name: Install Playwright #Run all testcases
-              run: npx playwright install
-            - name: Run qa test
-              run: npx playwright test
+name: 'automation test'
+description: 'Run unit tests'
+
+inputs:
+  SSH_PRIVATE_KEY:
+    description: 'SSH private key'
+    required: true
+  NODE_VERSION:
+    description: 'Node version'
+    required: false
+    default: '20'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - name: Use private ssh-key
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ inputs.SSH_PRIVATE_KEY }}
+
+    - name: Use Node ${{ inputs.NODE_VERSION }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.NODE_VERSION }}
+
+    - name: Install dependencies
+      shell: bash
+      run: npm install
+
