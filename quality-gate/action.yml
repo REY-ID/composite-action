@@ -21,7 +21,7 @@ runs:
       fetch-depth: 0
 
   - name: Download lcov code coverage
-    uses: actions/download-artifact@v3
+    uses: actions/download-artifact@v4
     if: ${{ inputs.WITH_COVERAGE == 'true' }}
     with:
       name: coverage
