@@ -1,0 +1,51 @@
+name: 'Upgrade Rey Common'
+description: 'upgrade rey-common-model version'
+
+inputs:
+  VERSION:
+    description: 'ArgoCD repository'
+    required: false
+  PAT:
+    description: 'Personal Access Token'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - id: latest
+      if: ${{ !inputs.VERSION }}
+      uses: pozetroninc/github-action-get-latest-release@v0.7.0
+      with:
+        owner: REY-ID
+        repo: rey-common-model
+        excludes: prerelease, draft
+        token: ${{ inputs.PAT }}
+
+    - name: Set version as env
+      shell: bash
+      run: echo "VERSION=${{ inputs.VERSION || steps.latest.outputs.release }}" >> $GITHUB_ENV
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository }}
+        token: ${{ inputs.PAT }}
+
+    - name: Update package.json version
+      uses: jossef/action-set-json-field@v2.1
+      with:
+        file: package.json
+        field: "dependencies.rey-common-model"
+        value: "git+ssh://git@github.com:REY-ID/rey-common-model.git#${{ env.VERSION }}"
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ inputs.PAT }}
+        commit-message: update rey-common-model version to ${{ env.VERSION }}
+        branch: upgrade/rey-common-model-${{ env.VERSION }}
+        delete-branch: true
+        title: Bump common to ${{ env.VERSION }}
+        body: |
+          This PR updates rey-common-model version to `${{ env.VERSION }}`
+        labels: dependencies
