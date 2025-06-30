@@ -36,21 +36,17 @@ runs:
       with:
         node-version: ${{ inputs.NODE_VERSION }}
 
-    # - name: Use dependency cache
-    #   uses: actions/cache@v3
-    #   id: npm-cache
-    #   with:
-    #     path: '**/node_modules'
-    #     key: ${{ github.event.repository.name }}-${{ hashFiles('**/package.json') }}
+    - name: Use dependency cache
+      uses: actions/cache@v3
+      id: npm-cache
+      with:
+        path: '**/node_modules'
+        key: ${{ github.event.repository.name }}-${{ hashFiles('**/package.json') }}
 
     - name: Install dependencies
       shell: bash
       if: steps.npm-cache.outputs.cache-hit != 'true'
       run: npm install
-      
-    - name: Rebuild npm node
-      shell: bash
-      run: npm rebuild --force
 
     - name: Run unit-test
       shell: bash
