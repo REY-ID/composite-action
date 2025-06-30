@@ -47,6 +47,10 @@ runs:
       shell: bash
       if: steps.npm-cache.outputs.cache-hit != 'true'
       run: npm install
+      
+    - name: Rebuild npm node
+      shell: bash
+      run: npm rebuild --force
 
     - name: Run unit-test
       shell: bash
