@@ -7,7 +7,7 @@ inputs:
     required: true
   PLATFORM:
     description: 'Platform'
-    default: linux/amd64,linux/arm64
+    default: linux/amd64
     required: false
   IMAGE_TAG:
     description: 'Image tag'
@@ -65,6 +65,7 @@ runs:
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: Dockerfile-aws
         push: true
         provenance: false
         platforms: ${{ inputs.PLATFORM }}
