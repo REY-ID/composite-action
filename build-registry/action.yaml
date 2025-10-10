@@ -70,6 +70,7 @@ runs:
         platforms: ${{ inputs.PLATFORM }}
         tags: |
           "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
+          "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:latest"
 
     - name: Notify slack if fail
       if: ${{ failure() && inputs.SLACK_WEBHOOK }}
