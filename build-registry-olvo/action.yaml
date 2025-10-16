@@ -45,6 +45,7 @@ runs:
       shell: bash
       id: buildx-context
       run: |
+        docker context rm buildx-context 2>/dev/null || true
         docker context create buildx-context
 
     - name: Set up Docker Buildx
