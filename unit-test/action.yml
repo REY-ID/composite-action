@@ -26,6 +26,12 @@ runs:
       with:
         persist-credentials: false
 
+    - name: Install SSH client
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openssh-client
+    
     - name: Use private ssh-key
       uses: webfactory/ssh-agent@v0.7.0
       with:
