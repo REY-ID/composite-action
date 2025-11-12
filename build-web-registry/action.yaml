@@ -37,6 +37,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Clean workspace
+      shell: bash
+      run: |
+        sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
+        sudo rm -rf $GITHUB_WORKSPACE/.scannerwork || true
+        
     - name: Checkout repository
       uses: actions/checkout@v4
 
