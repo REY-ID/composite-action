@@ -80,3 +80,7 @@ runs:
         SLACK_COLOR: "#CE5A51"
         SLACK_MESSAGE: "Building registry for `${{ inputs.SERVICE_NAME }}` has failed"
         MSG_MINIMAL: "actions url"
+
+    - name: Remove Docker Context (Cleanup)
+        if: always()
+        run: docker context rm buildx-context || echo 'buildx-context not found'
