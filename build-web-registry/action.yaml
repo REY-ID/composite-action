@@ -110,4 +110,5 @@ runs:
 
     - name: Remove Docker Context (Cleanup)
         if: always()
+        shell: bash
         run: docker context rm buildx-context || echo 'buildx-context not found'
