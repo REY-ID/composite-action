@@ -21,6 +21,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Cleanup runner workspace
+      if: always()
+      run: |
+        sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
+        rm -rf $GITHUB_WORKSPACE/*
+        
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
