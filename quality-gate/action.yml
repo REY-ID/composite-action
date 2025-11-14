@@ -17,11 +17,11 @@ runs:
   using: "composite"
   steps:
   - name: Cleanup runner workspace
-      shell: bash
-      if: always()
-      run: |
-        sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
-        rm -rf $GITHUB_WORKSPACE/*
+    shell: bash
+    if: always()
+    run: |
+      sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
+      rm -rf $GITHUB_WORKSPACE/*
         
   - uses: actions/checkout@v4
     with:
