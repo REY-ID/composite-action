@@ -21,6 +21,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Set timezone to Asia/Jakarta
+      shell: bash
+      run: |
+        sudo timedatectl set-timezone Asia/Jakarta || true
+        echo "TZ=Asia/Jakarta" >> $GITHUB_ENV
+        
     - name: Cleanup runner workspace
       shell: bash
       if: always()
