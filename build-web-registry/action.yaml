@@ -33,6 +33,9 @@ inputs:
   PAT:
     description: 'Personal Access Token'
     required: true
+  SSH_PRIVATE_KEY:
+    description: 'SSH Private Key for Git'
+    required: true
 
 runs:
   using: "composite"
@@ -97,7 +100,7 @@ runs:
         push: true
         provenance: false
         secrets: |
-          "ssh_key=${{ secrets.SSH_PRIVATE_KEY_BASE }}"
+          "ssh_key=${{ inputs.SSH_PRIVATE_KEY }}"
         tags: |
           "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
 
