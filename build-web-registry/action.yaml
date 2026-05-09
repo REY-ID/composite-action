@@ -100,7 +100,7 @@ runs:
         push: true
         provenance: false
         secrets: |
-          "ssh_key=${{ inputs.SSH_PRIVATE_KEY }}"
+          "GH_TOKEN=${{ inputs.PAT }}"
         tags: |
           "${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:${{ inputs.IMAGE_TAG }}"
 
