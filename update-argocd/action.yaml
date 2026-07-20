@@ -28,17 +28,28 @@ runs:
         path: infrastructure
         token: ${{ inputs.PAT }}
 
+    # Retry wrapper around yaml-update-action: pushes to the shared GitOps repo's
+    # `master` can transiently fail (non-fast-forward / ref replication lag) when
+    # multiple services deploy near-simultaneously. On failure the action's
+    # updateRef falls back to createRef, surfacing a misleading
+    # "Reference already exists". Wandalen/wretry retries the whole step; each
+    # attempt re-reads HEAD, so the retry clears the race. Same inputs as before
+    # (unset inputs fall back to the action's own defaults) — only retry is added.
     - name: Update ArgoCD image tag
-      uses: fjogeleit/yaml-update-action@v0.12.2
+      uses: Wandalen/wretry.action@v3.8.0
       with:
-        repository: ${{ inputs.ARGO_REPO }}
-        valueFile: ${{ inputs.SERVICE_NAME }}/values.yaml
-        propertyPath: 'image.tag'
-        value: "${{ inputs.IMAGE_TAG }}"
-        message: update ${{ inputs.SERVICE_NAME }} image tag to ${{ inputs.IMAGE_TAG }}
-        createPR: false
-        workDir: infrastructure
-        token: ${{ inputs.PAT }}
+        action: fjogeleit/yaml-update-action@v0.12.2
+        attempt_limit: 3
+        attempt_delay: 15000
+        with: |
+          repository: ${{ inputs.ARGO_REPO }}
+          valueFile: ${{ inputs.SERVICE_NAME }}/values.yaml
+          propertyPath: 'image.tag'
+          value: "${{ inputs.IMAGE_TAG }}"
+          message: update ${{ inputs.SERVICE_NAME }} image tag to ${{ inputs.IMAGE_TAG }}
+          createPR: false
+          workDir: infrastructure
+          token: ${{ inputs.PAT }}
 
     - name: Notify slack if fail
       if: ${{ failure() && inputs.SLACK_WEBHOOK }}
