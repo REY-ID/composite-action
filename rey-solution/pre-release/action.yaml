@@ -1,0 +1,83 @@
+name: 'Release'
+description: 'Create a pull request release of latest master branch and bump the version'
+
+inputs:
+  PAT_REYSOL:
+    description: 'Personal Access Token Local Repository'
+    required: true
+  GITHUB_TOKEN:
+    description: 'GitHub Token to access the repository'
+    required: true
+  SLACK_ACCESS_TOKEN:
+    description: 'Slack Access Token to send message to slack'
+    required: true
+  SLACK_CHANNEL: 
+    description: 'Slack Channel to send message to'
+    required: true
+  # JIRA_BASE_URL:
+  #   description: 'Jira Base URL'
+  #   required: true
+  # JIRA_USER_EMAIL:
+  #   description: 'Jira User Email'
+  #   required: true
+  # JIRA_API_TOKEN:
+  #   description: 'Jira API Token'
+  #   required: true
+  VERSIONING_FILE:
+    description: 'Versioning File'
+    default: 'package.json'
+    required: false
+  VERSIONING_PATH:
+    description: 'Versioning Path'
+    default: 'version'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Clean workspace
+      shell: bash
+      run: |
+        sudo chown -R $USER:$USER $GITHUB_WORKSPACE || true
+        sudo rm -rf $GITHUB_WORKSPACE/.scannerwork || true
+  
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ inputs.PAT_REYSOL }}
+  
+    - name: Generate new version
+      id: semver
+      uses: paulhatch/semantic-version@v5.0.3
+      with:
+        tag_prefix: "v"
+        change_path: "."
+        major_pattern: "breaking"
+        minor_pattern: "feat"
+        bump_each_commit: false
+
+    - name: Create PR for new release
+      id: bump
+      if: steps.semver.outputs.changed == 'true'
+      uses: fjogeleit/yaml-update-action@v0.13.0
+      with:
+        valueFile: ${{ inputs.VERSIONING_FILE }}
+        propertyPath: ${{ inputs.VERSIONING_PATH }}
+        value: "${{ steps.semver.outputs.version }}"
+        message: bump to ${{ steps.semver.outputs.version_tag }}
+        createPR: true
+        title: Release ${{ steps.semver.outputs.version_tag }}
+        description: "_put additional configs such as env, secret, syspar, or other in here_"
+        branch: release-${{ steps.semver.outputs.version_tag }}
+        targetBranch: release
+        labels: 'deployment'
+        token: ${{ inputs.PAT_REYSOL }}
+
+    - name: Get PR Commits
+      id: 'get-pr-commits'
+      if: steps.semver.outputs.changed == 'true'
+      uses: REY-ID/get-pr-commits@master
+      with:
+        token: ${{ inputs.GITHUB_TOKEN }}
+        pr_number: ${{ steps.bump.outputs.pull_request && fromJSON(steps.bump.outputs.pull_request).number }}
