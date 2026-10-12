@@ -1,0 +1,95 @@
+name: 'Back-sync to REY-Solution'
+description: 'Open a PR to the REY-Solution repository for commits made directly on the REY-ID release branch'
+
+inputs:
+  SOURCE_REPO:
+    description: 'Source repository in REY-Solution, e.g. REY-Solution/kingpin'
+    required: true
+  BRANCH:
+    description: 'Branch to sync'
+    default: 'release'
+    required: false
+  PAT_REYSOL:
+    description: 'Personal Access Token with write access (contents and pull requests) to SOURCE_REPO'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.BRANCH }}
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Compare with REY-Solution and push sync branch
+      id: compare
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.PAT_REYSOL }}
+        SOURCE: ${{ inputs.SOURCE_REPO }}
+        BRANCH: ${{ inputs.BRANCH }}
+      run: |
+        set -euo pipefail
+        : "${TOKEN:?PAT_REYSOL is empty}"
+        AUTH=$(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)
+        echo "::add-mask::${AUTH}"
+        git config --local "http.https://github.com/${SOURCE}.git/.extraheader" "AUTHORIZATION: basic ${AUTH}"
+        trap 'git config --local --unset-all "http.https://github.com/${SOURCE}.git/.extraheader" || true' EXIT
+        git remote add reysol "https://github.com/${SOURCE}.git"
+        git fetch --no-tags reysol "${BRANCH}"
+
+        LATEST_FIX=$(git rev-list --no-merges -n 1 "reysol/${BRANCH}..HEAD")
+        if [ -z "${LATEST_FIX}" ]; then
+          echo "Every non-merge commit on ${BRANCH} already exists in ${SOURCE}@${BRANCH}. Nothing to sync."
+          echo "needed=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        SYNC_BRANCH="sync/reyid-${LATEST_FIX:0:7}"
+        git push reysol "${LATEST_FIX}:refs/heads/${SYNC_BRANCH}"
+        echo "Pushed REY-ID commits up to ${LATEST_FIX:0:7} to ${SOURCE}@${SYNC_BRANCH}."
+        {
+          echo "needed=true"
+          echo "sync_branch=${SYNC_BRANCH}"
+          echo "commits<<EOF"
+          git log --oneline --no-merges "reysol/${BRANCH}..${LATEST_FIX}"
+          echo "EOF"
+        } >> "${GITHUB_OUTPUT}"
+
+    - name: Open PR to REY-Solution
+      if: steps.compare.outputs.needed == 'true'
+      uses: actions/github-script@v7
+      env:
+        SOURCE: ${{ inputs.SOURCE_REPO }}
+        BASE: ${{ inputs.BRANCH }}
+        HEAD_BRANCH: ${{ steps.compare.outputs.sync_branch }}
+        COMMITS: ${{ steps.compare.outputs.commits }}
+      with:
+        github-token: ${{ inputs.PAT_REYSOL }}
+        script: |
+          const [owner, repo] = process.env.SOURCE.split('/');
+          const base = process.env.BASE;
+          const head = process.env.HEAD_BRANCH;
+          const existing = await github.rest.pulls.list({ owner, repo, base, head: `${owner}:${head}`, state: 'open' });
+          if (existing.data.length) {
+            core.info(`PR #${existing.data[0].number} is already open.`);
+            return;
+          }
+          const body = [
+            '## Direct fix in REY-ID',
+            `These commits are in \`${context.repo.owner}/${context.repo.repo}@${base}\` but not in this repository yet:`,
+            '```',
+            process.env.COMMITS,
+            '```',
+            '## How to merge',
+            '- Use **Create a merge commit**. Do not squash or rebase, so both repositories keep the same history.',
+            '- Until this PR is merged, REY-Solution does not have this fix and the next release from REY-Solution will not include it in its source.',
+          ].join('\n');
+          const pr = await github.rest.pulls.create({
+            owner, repo, base, head,
+            title: `Back-sync from REY-ID: ${head}`,
+            body,
+          });
+          core.notice(`Opened PR: ${pr.data.html_url}`);

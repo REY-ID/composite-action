@@ -1,0 +1,140 @@
+name: 'Mirror to REY-ID'
+description: 'Push the tagged release commit from a REY-Solution repository to its REY-ID twin as incoming/<tag> and open a PR to the release branch'
+
+inputs:
+  TARGET_REPO:
+    description: 'Target repository, e.g. REY-ID/kingpin'
+    required: true
+  BRANCH:
+    description: 'Target branch in REY-ID that the PR is opened against'
+    default: 'release'
+    required: false
+  PAT_REYSOL:
+    description: 'Personal Access Token with write access (contents and pull requests) to TARGET_REPO'
+    required: true
+
+outputs:
+  pr_url:
+    description: 'URL of the PR opened in TARGET_REPO'
+    value: ${{ steps.pr.outputs.result }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Require a version tag
+      shell: bash
+      run: |
+        if [[ "${GITHUB_REF}" != refs/tags/v* ]]; then
+          echo "::error::This action must run from a v* tag, got ${GITHUB_REF}."
+          exit 1
+        fi
+
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Push incoming branch
+      id: push
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.PAT_REYSOL }}
+        TARGET: ${{ inputs.TARGET_REPO }}
+        BASE: ${{ inputs.BRANCH }}
+      run: |
+        set -euo pipefail
+        : "${TOKEN:?PAT_REYSOL is empty}"
+        TAG="${GITHUB_REF_NAME}"
+        INCOMING="incoming/${TAG}"
+        AUTH=$(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)
+        echo "::add-mask::${AUTH}"
+        git config --local "http.https://github.com/${TARGET}.git/.extraheader" "AUTHORIZATION: basic ${AUTH}"
+        trap 'git config --local --unset-all "http.https://github.com/${TARGET}.git/.extraheader" || true' EXIT
+        git remote add reyid "https://github.com/${TARGET}.git"
+
+        if git ls-remote --exit-code --heads reyid "${BASE}" >/dev/null 2>&1; then
+          git fetch --no-tags reyid "${BASE}"
+        else
+          if git rev-parse --verify --quiet "${GITHUB_SHA}^1" >/dev/null; then
+            SEED=$(git rev-parse "${GITHUB_SHA}^1")
+          else
+            SEED="${GITHUB_SHA}"
+          fi
+          echo "Branch ${BASE} does not exist in ${TARGET} yet. Creating it from ${SEED:0:7}, the parent of ${TAG}."
+          git push reyid "${SEED}:refs/heads/${BASE}"
+          git fetch --no-tags reyid "${BASE}"
+        fi
+
+        if git merge-base --is-ancestor "${GITHUB_SHA}" "reyid/${BASE}"; then
+          echo "${TAG} is already in ${TARGET}@${BASE}. Nothing to mirror."
+          echo "needed=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        git push reyid "${GITHUB_SHA}:refs/heads/${INCOMING}"
+        echo "Pushed ${TAG} to ${TARGET}@${INCOMING}."
+        {
+          echo "needed=true"
+          echo "tag=${TAG}"
+          echo "incoming=${INCOMING}"
+          echo "commits<<EOF"
+          git log --oneline --no-merges -n 50 "reyid/${BASE}..${GITHUB_SHA}"
+          echo "EOF"
+        } >> "${GITHUB_OUTPUT}"
+
+    - name: Open PR in REY-ID
+      id: pr
+      if: steps.push.outputs.needed == 'true'
+      uses: actions/github-script@v7
+      env:
+        TARGET: ${{ inputs.TARGET_REPO }}
+        BASE: ${{ inputs.BRANCH }}
+        HEAD_BRANCH: ${{ steps.push.outputs.incoming }}
+        TAG: ${{ steps.push.outputs.tag }}
+        COMMITS: ${{ steps.push.outputs.commits }}
+      with:
+        github-token: ${{ inputs.PAT_REYSOL }}
+        result-encoding: string
+        script: |
+          const [owner, repo] = process.env.TARGET.split('/');
+          const base = process.env.BASE;
+          const head = process.env.HEAD_BRANCH;
+          const tag = process.env.TAG;
+          const existing = await github.rest.pulls.list({ owner, repo, base, head: `${owner}:${head}`, state: 'open' });
+          if (existing.data.length) {
+            core.info(`PR #${existing.data[0].number} is already open: ${existing.data[0].html_url}`);
+            return existing.data[0].html_url;
+          }
+          const source = `${context.repo.owner}/${context.repo.repo}`;
+          const body = [
+            `## Release ${tag} from ${source}`,
+            `Source: https://github.com/${source}/tree/${tag}`,
+            '',
+            'Commits in this release:',
+            '```',
+            process.env.COMMITS,
+            '```',
+            '## How to approve',
+            '- Review and approve this PR, then merge it with **Create a merge commit**.',
+            `- Merging builds and pushes the image \`${repo}:${tag}\` to ECR.`,
+          ].join('\n');
+          const pr = await github.rest.pulls.create({
+            owner, repo, base, head,
+            title: `Release ${tag}`,
+            body,
+          });
+          core.notice(`Opened PR: ${pr.data.html_url}`);
+          return pr.data.html_url;
+
+    - name: Summary
+      if: steps.push.outputs.needed == 'true'
+      shell: bash
+      env:
+        TARGET: ${{ inputs.TARGET_REPO }}
+        PR_URL: ${{ steps.pr.outputs.result }}
+      run: |
+        {
+          echo "### Release ${GITHUB_REF_NAME} sent to \`${TARGET}\`"
+          echo "- Waiting for approval: ${PR_URL}"
+        } >> "${GITHUB_STEP_SUMMARY}"
