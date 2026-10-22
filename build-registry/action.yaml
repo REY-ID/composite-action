@@ -31,6 +31,10 @@ inputs:
   SLACK_WEBHOOK:
     description: 'Slack Webhook'
     required: false
+  BUILD_ARGS:
+    description: 'Docker build args, one KEY=VALUE per line'
+    default: ''
+    required: false
 
 runs:
   using: "composite"
@@ -74,6 +78,7 @@ runs:
         push: true
         provenance: false
         platforms: ${{ inputs.PLATFORM }}
+        build-args: ${{ inputs.BUILD_ARGS }}
         cache-from: type=registry,ref=${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:rey-cache
         cache-to: type=registry,ref=${{ inputs.AWS_ACCOUNT_ID }}.dkr.ecr.${{ inputs.AWS_REGION }}.amazonaws.com/${{ inputs.SERVICE_NAME }}:rey-cache,mode=max,image-manifest=true,oci-mediatypes=true
         tags: |
