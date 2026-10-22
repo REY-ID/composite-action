@@ -37,6 +37,7 @@ runs:
         echo "::add-mask::${AUTH}"
         git config --local "http.https://github.com/${SOURCE}.git/.extraheader" "AUTHORIZATION: basic ${AUTH}"
         trap 'git config --local --unset-all "http.https://github.com/${SOURCE}.git/.extraheader" || true' EXIT
+        git remote remove reysol 2>/dev/null || true
         git remote add reysol "https://github.com/${SOURCE}.git"
         git fetch --no-tags reysol "${BRANCH}"
 

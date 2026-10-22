@@ -51,6 +51,7 @@ runs:
         echo "::add-mask::${AUTH}"
         git config --local "http.https://github.com/${TARGET}.git/.extraheader" "AUTHORIZATION: basic ${AUTH}"
         trap 'git config --local --unset-all "http.https://github.com/${TARGET}.git/.extraheader" || true' EXIT
+        git remote remove reyid 2>/dev/null || true
         git remote add reyid "https://github.com/${TARGET}.git"
 
         if git ls-remote --exit-code --heads reyid "${BASE}" >/dev/null 2>&1; then
