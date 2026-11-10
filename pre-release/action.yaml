@@ -15,13 +15,13 @@ inputs:
     description: 'Slack Channel to send message to'
     required: true
   JIRA_BASE_URL:
-    description: 'Plane Base URL (input name kept as JIRA_* for caller compatibility)'
+    description: 'Jira Base URL'
     required: true
   JIRA_USER_EMAIL:
-    description: 'Not used by Plane, kept for caller compatibility'
-    required: false
+    description: 'Jira User Email'
+    required: true
   JIRA_API_TOKEN:
-    description: 'Plane API Key (input name kept as JIRA_* for caller compatibility)'
+    description: 'Jira API Token'
     required: true
   VERSIONING_FILE:
     description: 'Versioning File'
@@ -103,17 +103,22 @@ runs:
               ]
           }]
 
-    - name: Find Plane Task
-      id: find-issue-key
+    - name: Login to Jira
       if: steps.semver.outputs.changed == 'true'
-      uses: REY-Solution/rey-plane-workflow@master
-      with:
-        string: ${{ steps.get-pr-commits.outputs.messages }}
+      uses: atlassian/gajira-login@v3
+      env:
         JIRA_BASE_URL: ${{ inputs.JIRA_BASE_URL }}
         JIRA_USER_EMAIL: ${{ inputs.JIRA_USER_EMAIL }}
         JIRA_API_TOKEN: ${{ inputs.JIRA_API_TOKEN }}
 
-    - name: Send plane task to thread
+    - name: Find Jira Task
+      id: find-issue-key
+      if: steps.semver.outputs.changed == 'true'
+      uses: REY-ID/gajira-find-issue-key@master
+      with:
+        string: ${{ steps.get-pr-commits.outputs.messages }}
+
+    - name: Send jira task to thread
       if: steps.semver.outputs.changed == 'true' && steps.find-issue-key.outputs.has_issues == 'true'
       uses: archive/github-actions-slack@v2.7.0
       with:
